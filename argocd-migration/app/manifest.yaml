@@ -1,65 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  labels:
+    app: demo-app
+  namespace: argocd-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+        - name: demo-container
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
 ---
-  apiVersion: "apps/v1"
-  kind: "Deployment"
-  metadata:
-    name: "log-shipper-benchmark"
-    namespace: "argocd-a"
-    labels:
-      name: "log-shipper-benchmark"
-  spec:
-    replicas: 1
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 0
-        maxSurge: 1
-    selector:
-      matchLabels:
-        name: "log-shipper-benchmark"
-    template:
-      metadata:
-        name: "log-shipper-benchmark"
-        labels:
-          name: "log-shipper-benchmark"
-      spec:
-        terminationGracePeriodSeconds: 180 # 3 minutes [reduced for faster deployment]
-        containers:
-          - name: "log-shipper-benchmark"
-            image: "796715966878.dkr.ecr.us-east-1.amazonaws.com/stage-analytics-log-shipper-v1:772247db0e45978dd00fe0b671e01c008f943053"
-            imagePullPolicy: Always
-            ports:
-              - containerPort: 8000
-            env:
-              - name: HYE_ATX_API_BASE_URL
-                value: https://api-stage-hyperexecute.lambdatestinternal.com
-              - name: ML_ATX_API_BASE_URL
-                value: https://stage-api.lambdatestinternal.com
-              - name: FALCON_ATX_API_BASE_URL
-                value: https://stage-app-api.lambdatestinternal.com
-              - name: MOBILE_ATX_API_BASE_URL
-                value: https://stage-beta-api.lambdatestinternal.com
-              - name: API_RATE_LIMIT_MAX_RETRY_COUNT
-                value: "2"
-              - name: API_RATE_LIMIT_MAX_RETRY_AFTER_IN_SECONDS
-                value: "60"
-              - name: SMARTUI_BASE_URL
-                value: https://stage-automation-dotlapse-artefact.lambdatestinternal.com
-              - name: LOCAL_EVALUATION_CONFIG_DEBUG
-                value: "false"
-            resources:
-              requests:
-                cpu: 1000m
-                memory: 6000Mi
-              limits:
-               cpu: 3000m
-               memory: 8000Mi
-            readinessProbe:
-              httpGet:
-                path: /health?source=readiness
-                port: 8080
-                scheme: HTTP
-              initialDelaySeconds: 5
-              periodSeconds: 10
-              successThreshold: 1
-              failureThreshold: 5
-              timeoutSeconds: 15 
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app-svc
+  namespace: argocd-a
+  labels:
+    app: demo-app
+spec:
+  type: ClusterIP
+  selector:
+    app: demo-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
