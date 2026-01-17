@@ -23,21 +23,6 @@
           name: "log-shipper-benchmark"
       spec:
         terminationGracePeriodSeconds: 180 # 3 minutes [reduced for faster deployment]
-        nodeSelector:
-            node-type: LOGSHIPPER
-        tolerations:
-          - key: "node-type"
-            operator: "Equal"
-            value: "LOGSHIPPER"
-            effect: "NoSchedule"
-        serviceAccountName: log-shipper-service-account
-        volumes:
-        - name: log-shipper-store-db-secrets
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: log-shipper-store-credentials
         containers:
           - name: "log-shipper-benchmark"
             image: "796715966878.dkr.ecr.us-east-1.amazonaws.com/stage-analytics-log-shipper-v1:772247db0e45978dd00fe0b671e01c008f943053"
@@ -61,9 +46,6 @@
                 value: https://stage-automation-dotlapse-artefact.lambdatestinternal.com
               - name: LOCAL_EVALUATION_CONFIG_DEBUG
                 value: "false"
-            envFrom:
-              - secretRef:
-                  name: log-shipper-secret-store 
             resources:
               requests:
                 cpu: 1000m
@@ -71,10 +53,6 @@
               limits:
                cpu: 3000m
                memory: 8000Mi
-            volumeMounts:
-            - name: log-shipper-store-db-secrets
-              mountPath: "/mnt/secrets"
-              readOnly: true
             readinessProbe:
               httpGet:
                 path: /health?source=readiness
